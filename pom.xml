@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.ptff</groupId>
+	<artifactId>qsystem-server</artifactId>
+	<version>1.5</version>
+
+	<name>qsystem-server</name>
+	<description>PT Tera Forwarders Quotation System</description>
+
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>1.5.9.RELEASE</version>
+	</parent>
+
+	<scm>
+		<developerConnection>scm:git:ssh://git@gitlab.com/thepaperflight/teraforwarders.git</developerConnection>
+		<tag>qsystem-server-1.2</tag>
+	</scm>
+
+	<properties>
+		<env.type>DEV</env.type>
+
+		<!-- spring boot props -->
+		<java.version>1.8</java.version>
+		<hibernate.version>5.2.10.Final</hibernate.version>
+
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<java.version>1.8</java.version>
+
+		<!-- query dsl and automatic entity generator -->
+		<querydsl.version>4.1.4</querydsl.version>
+		<apt-maven-plugin.version>1.1.3</apt-maven-plugin.version>
+
+		<HikariCP.version>2.6.1</HikariCP.version>
+		<asm.version>5.1</asm.version>
+		<aws.sdk.version>1.11.313</aws.sdk.version>
+		<h2.version>1.4.195</h2.version>
+
+		<!-- plugin -->
+		<frontend-maven-plugin.version>1.4</frontend-maven-plugin.version>
+
+		<!-- Beanstalker -->
+		<maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
+		<beanstalk.versionLabel>${maven.build.timestamp}</beanstalk.versionLabel>
+	</properties>
+
+	<profiles>
+		<profile>
+			<activation>
+				<property>
+					<name>env.type</name>
+					<value>PROD</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>nl.geodienstencentrum.maven</groupId>
+						<artifactId>sass-maven-plugin</artifactId>
+						<version>3.5.3</version>
+						<executions>
+							<execution>
+								<phase>generate-resources</phase>
+								<goals>
+									<goal>update-stylesheets</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<resources>
+								<resource>
+									<source>
+										<directory>${project.basedir}/src/main/webapp/scss</directory>
+									</source>
+									<destination>${project.basedir}/src/main/webapp/scss_compiled</destination>
+								</resource>
+							</resources>
+						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>com.samaxes.maven</groupId>
+						<artifactId>minify-maven-plugin</artifactId>
+						<version>1.7.2</version>
+						<executions>
+							<execution>
+								<id>default-minify</id>
+								<phase>generate-resources</phase>
+								<goals>
+									<goal>minify</goal>
+								</goals>
+								<configuration>
+									<charset>utf-8</charset>
+									<jsEngine>CLOSURE</jsEngine>
+									<closureCompilationLevel>WHITESPACE_ONLY</closureCompilationLevel>
+									<nosuffix>false</nosuffix>
+									<skipMerge>true</skipMerge>
+									<verbose>true</verbose>
+									<cssSourceDir>scss_compiled</cssSourceDir>
+									<cssTargetDir>css</cssTargetDir>
+									<cssSourceIncludes>
+										<cssSourceInclude>*.css</cssSourceInclude>
+									</cssSourceIncludes>
+
+									<jsSourceDir>js_compiled</jsSourceDir>
+									<jsTargetDir>js</jsTargetDir>
+									<jsSourceIncludes>
+										<jsSourceInclude>*.js</jsSourceInclude>
+									</jsSourceIncludes>
+									<webappTargetDir>${project.basedir}/src/main/resources/static</webappTargetDir>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.ow2.asm</groupId>
+				<artifactId>asm</artifactId>
+				<version>${asm.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-aws</artifactId>
+				<version>1.2.2.RELEASE</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+
+	</dependencyManagement>
+	
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-jdbc</artifactId>
+		</dependency>
+
+		<!-- Security -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.thymeleaf.extras</groupId>
+			<artifactId>thymeleaf-extras-springsecurity4</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.thymeleaf.extras</groupId>
+			<artifactId>thymeleaf-extras-java8time</artifactId>
+		</dependency>
+
+		<!-- Caching -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-cache</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>javax.cache</groupId>
+			<artifactId>cache-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.ehcache</groupId>
+			<artifactId>ehcache</artifactId>
+		</dependency>
+
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
+
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+		<!-- Monitoring -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
+		<!-- automatically apply sensible development-time configuration (see DevToolsPropertyDefaultsPostProcessor) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-aws</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-configuration-processor</artifactId>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>net.sf.jasperreports</groupId>
+			<artifactId>jasperreports</artifactId>
+			<version>6.5.1</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sf.jasperreports</groupId>
+			<artifactId>jasperreports-fonts</artifactId>
+			<version>6.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sf.jasperreports</groupId>
+			<artifactId>jasperreports-functions</artifactId>
+			<version>6.5.1</version>
+		</dependency>
+		<dependency>
+			<groupId>joda-time</groupId>
+			<artifactId>joda-time</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.ocpsoft.prettytime</groupId>
+			<artifactId>prettytime</artifactId>
+			<version>4.0.1.Final</version>
+		</dependency>
+
+
+	</dependencies>
+	
+	<repositories>
+		<repository>
+			<id>jasper-extras</id>
+			<name>Jaspersoft extra repo</name>
+			<url>https://jaspersoft.artifactoryonline.com/jaspersoft/jr-ce-releases/</url>
+		</repository>
+	</repositories>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>jasper-extras</id>
+			<name>Jaspersoft extra repo</name>
+			<url>https://jaspersoft.artifactoryonline.com/jaspersoft/jr-ce-releases/</url>
+		</pluginRepository>
+	</pluginRepositories>
+
+
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>build-info</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>pl.project13.maven</groupId>
+				<artifactId>git-commit-id-plugin</artifactId>
+				<configuration>
+					<dotGitDirectory>../.git</dotGitDirectory>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>br.com.ingenieux</groupId>
+				<artifactId>beanstalk-maven-plugin</artifactId>
+				<version>1.5.0</version>
+				<configuration>
+					<serverId>pttf.aws.amazon.com</serverId>
+					<regionName>ap-southeast-1</regionName>
+					<applicationName>qsystem</applicationName>
+					<s3Bucket>qsystem</s3Bucket>
+					<s3Key>build/${project.artifactId}/${project.build.finalName}.jar</s3Key>
+					<cnamePrefix>qsystemprod</cnamePrefix>
+					<environmentName>prod</environmentName>
+					<environmentRef>prod</environmentRef>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-release-plugin</artifactId>
+				<version>2.5.3</version>
+			</plugin>
+			<plugin>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>addExtractedJarOnRootLevel</id>
+						<phase>package</phase>
+						<configuration>
+							<target>
+								<zip
+									destfile="${project.build.directory}/${project.artifactId}-${project.version}.zip"
+									update="yes" compress="false">
+									<zipfileset
+										src="${project.build.directory}/${project.artifactId}-${project.version}.jar" />
+									<zipfileset dir="src/ebextensions"
+										prefix=".ebextensions" />
+								</zip>
+								<move
+									file="${project.build.directory}/${project.artifactId}-${project.version}.jar"
+									tofile="${project.build.directory}/${project.artifactId}-${project.version}.jar.fat"></move>
+
+								<move
+									file="${project.build.directory}/${project.artifactId}-${project.version}.zip"
+									tofile="${project.build.directory}/${project.artifactId}-${project.version}.jar"></move>
+							</target>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+
+	</build>
+</project>
